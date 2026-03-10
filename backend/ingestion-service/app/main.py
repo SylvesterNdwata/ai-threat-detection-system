@@ -1,8 +1,18 @@
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from api.logs import router
 import uvicorn
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Connecting to database...")
+    from db.database import Base, engine
+    Base.metadata.create_all(bind=engine)
+    print("Database connected and tables created.")
+    yield
+    print("Shutting down...")
+
+app = FastAPI(lifespan=lifespan)
 
 app.include_router(router)
 
