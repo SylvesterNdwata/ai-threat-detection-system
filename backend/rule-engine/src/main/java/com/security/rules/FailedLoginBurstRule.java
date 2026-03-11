@@ -19,7 +19,6 @@ public class FailedLoginBurstRule {
                 failedAttempts++;
             }
         }
-        // For example, check if there are more than 5 failed login attempts from the same IP within a 10-minute window
         return failedAttempts >= 5;
     }
 
