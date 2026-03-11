@@ -16,7 +16,9 @@ try:
         source_ip="192.168.1.100",
         endpoint="/api/login",
         status_code=200,  # Valid HTTP code
-        message="Login successful"
+        message="Login successful",
+        user_id="user123",
+        user_agent="Mozilla/5.0"
     )
     print(f"Success! Created log with status {valid_log.status_code}")
 except Exception as e:
@@ -30,7 +32,9 @@ try:
         source_ip="192.168.1.100",
         endpoint="/api/test",
         status_code=999,  # Invalid - too high!
-        message="Test"
+        message="Test",
+        user_id="user123",
+        user_agent="Mozilla/5.0"
     )
     print("Success!")
 except Exception as e:
@@ -44,7 +48,9 @@ try:
         source_ip="192.168.1.100",
         endpoint="/api/test",
         status_code=50,  # Invalid - too low!
-        message="Test"
+        message="Test",
+        user_id="user123",
+        user_agent="Mozilla/5.0"
     )
     print("Success!")
 except Exception as e:
