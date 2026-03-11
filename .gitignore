@@ -1,31 +1,33 @@
-# Ignore virtual environment
+virtual environment
 .venv/
 venv/
-env/
 
-# Ignore database files
+# database files
 *.db
 *.db-journal
 
-# Ignore Python cache
+# Python cache
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 
-# Ignore environment files
+test files
+test*
+
+# environment files
 .env
 .env.local
 
-# Ignore IDE files
+# IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# Ignore logs
+# logs
 *.log
 
-# Ignore OS files
+# OS files
 .DS_Store
 Thumbs.db
