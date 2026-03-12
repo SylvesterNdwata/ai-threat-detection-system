@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field
-from datetime import datetime
+from pydantic import BaseModel, Field, field_validator
+from datetime import datetime, timezone
 
 
 class Log(BaseModel):
@@ -10,3 +10,12 @@ class Log(BaseModel):
     status_code: int = Field(..., ge=100, le=599, description="HTTP status code")
     user_agent: str | None = Field(None, max_length=255, description="User agent string")
     message: str = Field(..., max_length=1000, description="Log message content")
+    
+    @field_validator("timestamp")
+    @classmethod
+    def normalize_timestamp(cls, value):
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        else:
+            value = value.astimezone(timezone.utc)
+        return value

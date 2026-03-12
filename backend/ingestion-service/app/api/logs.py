@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from db.database import get_db
 from sqlalchemy.orm import Session
 from models.log_model import LogEntry
+from datetime import datetime, timezone
 
 
 
@@ -32,7 +33,7 @@ async def get_log(log_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Log entry not found")
     return {
         "id": log_entry.id,
-        "timestamp": log_entry.timestamp,
+        "timestamp": normalize_timestamp(log_entry.timestamp),
         "source_ip": log_entry.source_ip,
         "user_id": log_entry.user_id,
         "endpoint": log_entry.endpoint,
@@ -48,7 +49,7 @@ async def list_logs(db: Session = Depends(get_db)):
     return [
         {
             "id": log_entry.id,
-            "timestamp": log_entry.timestamp,
+            "timestamp": normalize_timestamp(log_entry.timestamp),
             "source_ip": log_entry.source_ip,
             "user_id": log_entry.user_id,
             "endpoint": log_entry.endpoint,
@@ -58,3 +59,8 @@ async def list_logs(db: Session = Depends(get_db)):
         }
         for log_entry in log_entries
     ]
+
+def normalize_timestamp(value):
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
