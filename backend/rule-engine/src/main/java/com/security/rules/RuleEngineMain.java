@@ -30,6 +30,9 @@ public class RuleEngineMain {
         boolean isSuspiciousFromSameIP = rule.suspiciousBruteLoginFromSameIP();
         System.out.println("Suspicious brute login from same IP detected: " + isSuspiciousFromSameIP);
 
+        boolean isSuspiciousFromSameIPWithinTimeFrame = rule.suspiciousBruteLoginFromSameIPWithinTimeFrame(5, 10);
+        System.out.println("Suspicious brute login from same IP within time frame detected: " + isSuspiciousFromSameIPWithinTimeFrame);
+
 
     }
 

@@ -12,8 +12,12 @@ __pycache__/
 *$py.class
 *.so
 
-# test files
-test*
+# test artifacts
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
 
 # environment files
 .env
@@ -31,3 +35,6 @@ test*
 # OS files
 .DS_Store
 Thumbs.db
+
+# java class files
+*.class

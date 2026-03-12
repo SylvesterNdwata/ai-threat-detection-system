@@ -1,13 +1,15 @@
 package com.security.rules;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 public class FailedLoginBurstRule {
 
-    private final List<LogEvent> logEvents;
+    private final ArrayList<LogEvent> logEvents;
 
-    public FailedLoginBurstRule(List<LogEvent> logEvents) {
+    public FailedLoginBurstRule(ArrayList<LogEvent> logEvents) {
         this.logEvents = logEvents;
     }
 
@@ -36,6 +38,37 @@ public class FailedLoginBurstRule {
                 }
             }
         }
+        return false;
+    }
+
+    public boolean suspiciousBruteLoginFromSameIPWithinTimeFrame(int threshold, int timeFrame) {
+        HashMap<String, ArrayList<Instant>> ipFailedAttempts = new HashMap<>();
+
+        for (LogEvent event : this.logEvents) {
+            boolean isFailedLogin = (event.getEndpoint().equals("/api/login") || event.getEndpoint().equals("/login")) && 
+                                    (event.getStatusCode() == 401 || event.getStatusCode() == 403);
+
+            if (!isFailedLogin) {
+                continue;
+            }
+
+            String ip = event.getSourceIp();
+            Instant eventTime = Instant.parse(event.getTimestamp());
+
+            ArrayList<Instant> attempts = ipFailedAttempts.getOrDefault(ip, new ArrayList<>());
+            attempts.add(eventTime);
+
+            Instant windowStart = eventTime.minus(Duration.ofMinutes(timeFrame));
+            attempts.removeIf(attemptTime -> attemptTime.isBefore(windowStart));
+
+            ipFailedAttempts.put(ip, attempts);
+
+            if (attempts.size() >= threshold) {
+                return true;
+            }
+
+        }
+
         return false;
     }
 }
