@@ -139,4 +139,65 @@ public class FailedLoginBurstRuleTest {
         FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
         assertFalse(rule.suspiciousBruteLoginFromSameIPWithinTimeFrame(5, 10));
     }
+
+    @Test
+    void shouldDetectUnusualEndpointAccessByIP() {
+        ArrayList<LogEvent> events = new ArrayList<>();
+
+        events.add(makeEvent("192.168.1.2", "/api/data", 200, "2026-03-12T10:00:00Z"));
+        events.add(makeEvent("192.168.1.2", "/api/admin", 200, "2026-03-12T10:01:00Z"));
+        events.add(makeEvent("192.168.1.2", "/api/internal", 200, "2026-03-12T10:02:00Z"));
+        events.add(makeEvent("192.168.1.2", "/health", 200, "2026-03-12T10:03:00Z"));
+        events.add(makeEvent("192.168.1.2", "/metrics", 200, "2026-03-12T10:04:00Z"));
+        events.add(makeEvent("192.168.1.2", "/config", 200, "2026-03-12T10:05:00Z"));
+
+        FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
+
+        assertTrue(rule.suspiciousUnusualEndpointAccessByIP(6));
+    }
+
+    @Test
+    void shouldReturnFalseWhenUnusualEndpointAccessByIPIsLessThanThreshold() {
+        ArrayList<LogEvent> events = new ArrayList<>();
+
+        events.add(makeEvent("192.168.1.2", "/api/data", 200, "2026-03-12T10:00:00Z"));
+        events.add(makeEvent("192.168.1.2", "/api/admin", 200, "2026-03-12T10:01:00Z"));
+        events.add(makeEvent("192.168.1.2", "/api/internal", 200, "2026-03-12T10:02:00Z"));
+        events.add(makeEvent("192.168.1.2", "/health", 200, "2026-03-12T10:03:00Z"));
+        events.add(makeEvent("192.168.1.2", "/metrics", 200, "2026-03-12T10:04:00Z"));
+
+        FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
+
+        assertFalse(rule.suspiciousUnusualEndpointAccessByIP(6));
+    }
+
+    @Test
+    void shouldDetectPortScanPatternWhenManyDistinctEndpointsHitQuickly() {
+        ArrayList<LogEvent> events = new ArrayList<>();
+
+        events.add(makeEvent("192.168.1.2", "/api/data", 200, "2026-03-12T10:00:00Z"));
+        events.add(makeEvent("192.168.1.2", "/api/admin", 200, "2026-03-12T10:01:00Z"));
+        events.add(makeEvent("192.168.1.2", "/api/internal", 200, "2026-03-12T10:02:00Z"));
+        events.add(makeEvent("192.168.1.2", "/health", 200, "2026-03-12T10:03:00Z"));
+        events.add(makeEvent("192.168.1.2", "/metrics", 200, "2026-03-12T10:04:00Z"));
+
+        FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
+
+        assertTrue(rule.suspiciousPortScanPattern(5, 10));
+    }
+
+    @Test
+    void shouldNotDetectPortScanWhenActivityIsOutsideTimeWindow() {
+        ArrayList<LogEvent> events = new ArrayList<>();
+
+        events.add(makeEvent("192.168.1.2", "/api/data", 200, "2026-03-12T10:00:00Z"));
+        events.add(makeEvent("192.168.1.2", "/api/admin", 200, "2026-03-12T10:11:00Z"));
+        events.add(makeEvent("192.168.1.2", "/api/internal", 200, "2026-03-12T10:22:00Z"));
+        events.add(makeEvent("192.168.1.2", "/health", 200, "2026-03-12T10:33:00Z"));
+        events.add(makeEvent("192.168.1.2", "/metrics", 200, "2026-03-12T10:44:00Z"));
+
+        FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
+
+        assertFalse(rule.suspiciousPortScanPattern(5, 10));
+    }
 }

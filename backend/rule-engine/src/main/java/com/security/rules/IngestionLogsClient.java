@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class IngestionLogsClient {
 
-    private ObjectMapper mapper;
+    private final ObjectMapper mapper;
 
     public IngestionLogsClient() {
         this.mapper = new ObjectMapper();
@@ -52,7 +52,7 @@ public class IngestionLogsClient {
             }
 
             for (JsonNode item : rootNode) {
-                Long id = item.path("id").asLong();
+                long id = item.path("id").asLong();
                 String timestamp = item.path("timestamp").asText();
                 String sourceIp = item.path("source_ip").asText();
                 String userId = item.path("user_id").isNull() ? null : item.path("user_id").asText();

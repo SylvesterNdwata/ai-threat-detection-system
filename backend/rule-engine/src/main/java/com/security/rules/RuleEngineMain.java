@@ -12,6 +12,8 @@ public class RuleEngineMain {
 
         ArrayList<LogEvent> logEvents = new ArrayList<>();
 
+        FailedLoginBurstRule rule = new FailedLoginBurstRule(logEvents);
+
         logEvents.add(new LogEvent(2, "2024-06-01T12:01:00Z", "192.168.1.2", "user2", "/api/login", 401, "Mozilla/5.0", "Unauthorized access"));
         logEvents.add(new LogEvent(3, "2024-06-01T12:02:00Z", "192.168.1.2", "user3", "/api/login", 200, "Mozilla/5.0", "Request successful"));
         logEvents.add(new LogEvent(4, "2024-06-01T12:03:00Z", "192.168.1.2", "user4", "/api/login", 403, "Mozilla/5.0", "Unauthorized access"));
@@ -51,8 +53,9 @@ public class RuleEngineMain {
         boolean isSuspiciousFromSameIPWithinTimeFrameFromClient = rule.suspiciousBruteLoginFromSameIPWithinTimeFrame(5, 10);
         System.out.println("Suspicious brute login from same IP within time frame detected from client logs: " + isSuspiciousFromSameIPWithinTimeFrameFromClient);
 
-
-
-
+        boolean isSuspiciousUnusualEndpointAccess = rule.suspiciousUnusualEndpointAccessByIP(5);
+        System.out.println("Suspicious unusual endpoint access detected from client logs: " + isSuspiciousUnusualEndpointAccess);
+    
+        System.exit(0);
     }
 }
