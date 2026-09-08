@@ -1,9 +1,9 @@
 from schemas.log_schema import Log
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from db.database import get_db
 from sqlalchemy.orm import Session
 from models.log_model import LogEntry
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 
 
@@ -43,8 +43,15 @@ async def get_log(log_id: int, db: Session = Depends(get_db)):
     }
 
 @router.get("/logs")
-async def list_logs(db: Session = Depends(get_db)):
-    log_entries = db.query(LogEntry).all()
+async def list_logs(db: Session = Depends(get_db),
+        since_minutes: int | None = Query(None, ge=1, description="Only return logs from the last N minutes")):
+    query = db.query(LogEntry)
+    
+    if since_minutes is not None:
+        cutoff = datetime.now(timezone.utc) - timedelta(minutes=since_minutes)
+        query = query.filter(LogEntry.timestamp >= cutoff.replace(tzinfo=None))
+    
+    log_entries = query.all()
     
     return [
         {

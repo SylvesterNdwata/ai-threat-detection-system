@@ -6,7 +6,7 @@ from db.database import Base
 class LogEntry(Base):
     __tablename__ = "logs"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    timestamp = Column(DateTime, nullable=False)
+    timestamp = Column(DateTime, nullable=False, index=True)
     source_ip = Column(String(45), nullable=False)
     user_id = Column(String(50), nullable=True)
     endpoint = Column(String(255), nullable=False)

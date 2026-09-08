@@ -19,7 +19,7 @@ public class FailedLoginBurstRuleTest {
             events.add(makeEvent("1.1.1." + i, "/api/login", 401, "2026-03-12T10:00:00Z"));
         }
         FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
-        assertTrue(rule.suspiciousBruteLogin());
+        assertFalse(rule.suspiciousBruteLogin().isEmpty());
     }
 
     @Test
@@ -29,7 +29,7 @@ public class FailedLoginBurstRuleTest {
             events.add(makeEvent("1.1.1." + i, "/api/login", 401, "2026-03-12T10:00:00Z"));
         }
         FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
-        assertFalse(rule.suspiciousBruteLogin());
+        assertTrue(rule.suspiciousBruteLogin().isEmpty());
     }
 
     @Test
@@ -40,7 +40,7 @@ public class FailedLoginBurstRuleTest {
         }
         events.add(makeEvent("1.1.1.1", "/api/login", 200, "2026-03-12T10:00:00Z"));
         FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
-        assertFalse(rule.suspiciousBruteLogin());
+        assertTrue(rule.suspiciousBruteLogin().isEmpty());
     }
 
     @Test
@@ -52,7 +52,7 @@ public class FailedLoginBurstRuleTest {
         events.add(makeEvent("1.1.1.1", "/login", 403, "2026-03-12T10:00:00Z"));
         events.add(makeEvent("1.1.1.1", "/login", 403, "2026-03-12T10:00:00Z"));
         FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
-        assertTrue(rule.suspiciousBruteLogin());
+        assertFalse(rule.suspiciousBruteLogin().isEmpty());
     }
 
     @Test
@@ -62,7 +62,7 @@ public class FailedLoginBurstRuleTest {
             events.add(makeEvent("192.168.1.10", "/api/login", 401, "2026-03-12T10:00:00Z"));
         }
         FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
-        assertTrue(rule.suspiciousBruteLoginFromSameIP());
+        assertFalse(rule.suspiciousBruteLoginFromSameIP().isEmpty());
     }
 
     @Test
@@ -74,7 +74,7 @@ public class FailedLoginBurstRuleTest {
             events.add(makeEvent("10.0.0.3", "/api/login", 401, "2026-03-12T10:00:00Z"));
         }
         FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
-        assertFalse(rule.suspiciousBruteLoginFromSameIP());
+        assertTrue(rule.suspiciousBruteLoginFromSameIP().isEmpty());
     }
 
     @Test
@@ -87,7 +87,7 @@ public class FailedLoginBurstRuleTest {
             events.add(makeEvent("10.0.0.2", "/api/login", 403, "2026-03-12T10:00:00Z"));
         }
         FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
-        assertTrue(rule.suspiciousBruteLoginFromSameIP());
+        assertFalse(rule.suspiciousBruteLoginFromSameIP().isEmpty());
     }
 
     @Test
@@ -99,7 +99,7 @@ public class FailedLoginBurstRuleTest {
         events.add(makeEvent("172.16.0.1", "/api/login", 401, "2026-03-12T10:03:00Z"));
         events.add(makeEvent("172.16.0.1", "/api/login", 401, "2026-03-12T10:04:00Z"));
         FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
-        assertTrue(rule.suspiciousBruteLoginFromSameIPWithinTimeFrame(5, 10));
+        assertFalse(rule.suspiciousBruteLoginFromSameIPWithinTimeFrame(5, 10).isEmpty());
     }
 
     @Test
@@ -111,7 +111,7 @@ public class FailedLoginBurstRuleTest {
         events.add(makeEvent("172.16.0.1", "/api/login", 401, "2026-03-12T13:00:00Z"));
         events.add(makeEvent("172.16.0.1", "/api/login", 401, "2026-03-12T14:00:00Z"));
         FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
-        assertFalse(rule.suspiciousBruteLoginFromSameIPWithinTimeFrame(5, 10));
+        assertTrue(rule.suspiciousBruteLoginFromSameIPWithinTimeFrame(5, 10).isEmpty());
     }
 
     @Test
@@ -126,7 +126,7 @@ public class FailedLoginBurstRuleTest {
         events.add(makeEvent("192.168.1.2", "/api/login", 401, "2026-03-12T10:02:00Z"));
         events.add(makeEvent("192.168.1.2", "/api/login", 401, "2026-03-12T10:03:00Z"));
         FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
-        assertFalse(rule.suspiciousBruteLoginFromSameIPWithinTimeFrame(5, 10));
+        assertTrue(rule.suspiciousBruteLoginFromSameIPWithinTimeFrame(5, 10).isEmpty());
     }
 
     @Test
@@ -137,7 +137,7 @@ public class FailedLoginBurstRuleTest {
         events.add(makeEvent("192.168.1.2", "/api/login", 401, "2026-03-12T10:04:00Z"));
         events.add(makeEvent("192.168.1.2", "/api/login", 401, "2026-03-12T10:10:00Z"));
         FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
-        assertFalse(rule.suspiciousBruteLoginFromSameIPWithinTimeFrame(5, 10));
+        assertTrue(rule.suspiciousBruteLoginFromSameIPWithinTimeFrame(5, 10).isEmpty());
     }
 
     @Test
@@ -153,7 +153,7 @@ public class FailedLoginBurstRuleTest {
 
         FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
 
-        assertTrue(rule.suspiciousUnusualEndpointAccessByIP(6));
+        assertFalse(rule.suspiciousUnusualEndpointAccessByIP(6).isEmpty());
     }
 
     @Test
@@ -168,7 +168,7 @@ public class FailedLoginBurstRuleTest {
 
         FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
 
-        assertFalse(rule.suspiciousUnusualEndpointAccessByIP(6));
+        assertTrue(rule.suspiciousUnusualEndpointAccessByIP(6).isEmpty());
     }
 
     @Test
@@ -183,7 +183,7 @@ public class FailedLoginBurstRuleTest {
 
         FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
 
-        assertTrue(rule.suspiciousPortScanPattern(5, 10));
+        assertFalse(rule.suspiciousPortScanPattern(5, 10).isEmpty());
     }
 
     @Test
@@ -198,6 +198,6 @@ public class FailedLoginBurstRuleTest {
 
         FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
 
-        assertFalse(rule.suspiciousPortScanPattern(5, 10));
+        assertTrue(rule.suspiciousPortScanPattern(5, 10).isEmpty());
     }
 }

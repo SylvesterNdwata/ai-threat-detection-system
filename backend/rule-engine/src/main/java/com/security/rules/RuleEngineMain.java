@@ -1,61 +1,64 @@
 package com.security.rules;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class RuleEngineMain {
 
-    public static void main(String[] args) {
+    private static final int ALERT_COOLDOWN_MINUTES = 20;
+
+    /**
+     * @param args
+     * @throws InterruptedException
+     */
+    public static void main(String[] args) throws InterruptedException {
         System.out.println("Rule engine started...");
-
-        /*LogEvent log = new LogEvent(1, "2024-06-01T12:00:00Z", "192.168.1.1", "user1", "/api/data", 200, "Mozilla/5.0", "Request successful");
-        System.out.println(log);
-
-        ArrayList<LogEvent> logEvents = new ArrayList<>();
-
-        FailedLoginBurstRule rule = new FailedLoginBurstRule(logEvents);
-
-        logEvents.add(new LogEvent(2, "2024-06-01T12:01:00Z", "192.168.1.2", "user2", "/api/login", 401, "Mozilla/5.0", "Unauthorized access"));
-        logEvents.add(new LogEvent(3, "2024-06-01T12:02:00Z", "192.168.1.2", "user3", "/api/login", 200, "Mozilla/5.0", "Request successful"));
-        logEvents.add(new LogEvent(4, "2024-06-01T12:03:00Z", "192.168.1.2", "user4", "/api/login", 403, "Mozilla/5.0", "Unauthorized access"));
-        logEvents.add(new LogEvent(5, "2024-06-01T12:04:00Z", "192.168.1.2", "user5", "/api/login", 401, "Mozilla/5.0", "Unauthorized access"));
-        logEvents.add(new LogEvent(6, "2024-06-01T12:05:00Z", "192.168.1.2", "user6", "/api/login", 200, "Mozilla/5.0", "Request successful"));
-        logEvents.add(new LogEvent(7, "2024-06-01T12:06:00Z", "192.168.1.2", "user7", "/api/login", 401, "Mozilla/5.0", "Unauthorized access"));
-        logEvents.add(new LogEvent(8, "2024-06-01T12:07:00Z", "192.168.1.2", "user8", "/api/login", 401, "Mozilla/5.0", "Unauthorized access"));
-        logEvents.add(new LogEvent(9, "2024-06-01T12:08:00Z", "192.168.1.2", "user9", "/api/login", 200, "Mozilla/5.0", "Request successful"));
-
-
-        boolean isSuspicious = rule.suspiciousBruteLogin();
-        System.out.println("Suspicious brute login detected: " + isSuspicious);
-
-        boolean isSuspiciousFromSameIP = rule.suspiciousBruteLoginFromSameIP();
-        System.out.println("Suspicious brute login from same IP detected: " + isSuspiciousFromSameIP);
-
-        boolean isSuspiciousFromSameIPWithinTimeFrame = rule.suspiciousBruteLoginFromSameIPWithinTimeFrame(5, 10);
-        System.out.println("Suspicious brute login from same IP within time frame detected: " + isSuspiciousFromSameIPWithinTimeFrame);*/
-
         IngestionLogsClient client = new IngestionLogsClient();
-        ArrayList<LogEvent> logsFromClient = client.getLogs();
+        Map<String, Instant> lastAlertedAt = new HashMap<>();
 
-        System.out.println("Logs fetched from ingestion service:");
-        for (LogEvent event : logsFromClient) {
-            System.out.println(event);
+        while (true) {
+            try {
+                ArrayList<LogEvent> logsFromClient = client.getLogs(20);
+
+                System.out.println("Logs fetched from ingestion service:");
+                for (LogEvent event : logsFromClient) {
+                    System.out.println(event);
+                }
+
+                FailedLoginBurstRule rule = new FailedLoginBurstRule(logsFromClient);
+
+                System.out.println("Evaluating rules on fetched logs...");
+                List<RuleResult> allResults = new ArrayList<>();
+                allResults.addAll(rule.suspiciousBruteLogin());
+                allResults.addAll(rule.suspiciousBruteLoginFromSameIP());
+                allResults.addAll(rule.suspiciousBruteLoginFromSameIPWithinTimeFrame(5, 10));
+                allResults.addAll(rule.suspiciousUnusualEndpointAccessByIP(5));
+                allResults.addAll(rule.suspiciousPortScanPattern(5, 10));
+
+                Instant now = Instant.now();
+                for (RuleResult result : allResults) {
+                    String key = result.getRuleName() + "|" + (result.getSourceIp() == null ? "GLOBAL" : result.getSourceIp());
+                    Instant lastAlert = lastAlertedAt.get(key);
+
+                    if (lastAlert != null && Duration.between(lastAlert, now).toMinutes() < ALERT_COOLDOWN_MINUTES) {
+                        System.out.println("SUPPRESSED (cooldown): " + result);
+                        continue;
+                    }
+
+                    System.out.println("ALERT: " + result);
+                    client.postAlert(result);
+                    lastAlertedAt.put(key, now);
+                }
+            } catch (RuntimeException e) {
+                System.err.println("Rule engine iteration failed: " + e.getMessage());
+                e.printStackTrace();
+            }
+
+            Thread.sleep(5000);
         }
-
-        FailedLoginBurstRule rule = new FailedLoginBurstRule(logsFromClient);
-
-        System.out.println("Evaluating rules on fetched logs...");
-        boolean isSuspiciousFromClient = rule.suspiciousBruteLogin();
-        System.out.println("Suspicious brute login detected from client logs: " + isSuspiciousFromClient);
-
-        boolean isSuspiciousFromSameIPFromClient = rule.suspiciousBruteLoginFromSameIP();
-        System.out.println("Suspicious brute login from same IP detected from client logs: " + isSuspiciousFromSameIPFromClient);
-
-        boolean isSuspiciousFromSameIPWithinTimeFrameFromClient = rule.suspiciousBruteLoginFromSameIPWithinTimeFrame(5, 10);
-        System.out.println("Suspicious brute login from same IP within time frame detected from client logs: " + isSuspiciousFromSameIPWithinTimeFrameFromClient);
-
-        boolean isSuspiciousUnusualEndpointAccess = rule.suspiciousUnusualEndpointAccessByIP(5);
-        System.out.println("Suspicious unusual endpoint access detected from client logs: " + isSuspiciousUnusualEndpointAccess);
-    
-        System.exit(0);
     }
 }

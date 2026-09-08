@@ -9,25 +9,29 @@ import java.util.ArrayList;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class IngestionLogsClient {
 
     private final ObjectMapper mapper;
+    private final HttpClient httpClient;
 
     public IngestionLogsClient() {
         this.mapper = new ObjectMapper();
+        this.httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
     }
 
-    public ArrayList<LogEvent> getLogs() {
-        HttpClient httpClient = HttpClient.newHttpClient();
+    public ArrayList<LogEvent> getLogs(int sinceMinutes) {
         HttpRequest httpRequest = HttpRequest.newBuilder()
                 .GET()
-                .uri(URI.create("http://localhost:8001/logs"))
+                .uri(URI.create("http://localhost:8001/logs?since_minutes=" + sinceMinutes))
                 .build();
 
         try {
-            HttpResponse<String> httpResponse = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-            
+            HttpResponse<String> httpResponse = this.httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+
             if (httpResponse.statusCode() != 200) {
                 throw new RuntimeException("Failed to fetch logs: ingestion service returned status code " + httpResponse.statusCode());
             }
@@ -36,8 +40,7 @@ public class IngestionLogsClient {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Thread was interrupted while fetching logs", e);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new RuntimeException("Failed to fetch logs", e);
         }
     }
@@ -46,7 +49,7 @@ public class IngestionLogsClient {
         ArrayList<LogEvent> logEvents = new ArrayList<>();
         try {
             JsonNode rootNode = mapper.readTree(jsonBody);
-            
+
             if (!rootNode.isArray()) {
                 throw new RuntimeException("Expected JSON array of log events");
             }
@@ -68,6 +71,31 @@ public class IngestionLogsClient {
             throw new RuntimeException("Failed to parse logs", e);
         }
         return logEvents;
+    }
+
+    public void postAlert(RuleResult result) {
+        ObjectNode payload = this.mapper.createObjectNode();
+        payload.put("rule_name", result.getRuleName());
+        payload.put("source_ip", result.getSourceIp());
+        payload.put("detail", result.getDetail());
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:8001/alerts"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
+                .build();
+
+        try {
+            HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() != 200) {
+                throw new RuntimeException("Failed to post alert: status code " + response.statusCode());
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while posting alert", e);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to post alert", e);
+        }
     }
 
 }

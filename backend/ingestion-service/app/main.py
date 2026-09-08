@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from api.logs import router
+from api.alerts import router as alerts_router
 from db.database import Base, engine
 import uvicorn
 
@@ -12,6 +13,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(router)
+app.include_router(alerts_router)
 
 @app.get("/")
 async def root():

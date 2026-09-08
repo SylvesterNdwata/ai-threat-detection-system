@@ -1,6 +1,7 @@
 virtual environment
 .venv/
 venv/
+target/
 
 # database files
 *.db

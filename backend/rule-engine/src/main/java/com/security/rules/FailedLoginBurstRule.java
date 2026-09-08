@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 
 public class FailedLoginBurstRule {
 
@@ -14,8 +15,9 @@ public class FailedLoginBurstRule {
         this.logEvents = logEvents;
     }
 
-    public boolean suspiciousBruteLogin() {
+    public List<RuleResult> suspiciousBruteLogin() {
         // Implementation of logic to detect failed login bursts
+        List<RuleResult> results = new ArrayList<>();
         int failedAttempts = 0;
         for (LogEvent event : this.logEvents) {
             if (isLoginEndpoint(event) && isFailedLogin(event)) {
@@ -23,33 +25,38 @@ public class FailedLoginBurstRule {
             }
         }
         if (failedAttempts >= 5) {
-            System.out.println("Suspicious activity detected: " + failedAttempts + " failed login attempts.");
-            return true;
+            results.add(new RuleResult("FailedLoginBurst",  null, 
+                failedAttempts + " failed login attempts detected."));
         }
 
-        return false;
+        return results;
     }
 
-    public boolean suspiciousBruteLoginFromSameIP() {
+    public List<RuleResult> suspiciousBruteLoginFromSameIP() {
         // Implementation of logic to detect failed login bursts from the same IP
         HashMap<String, Integer> ipFailedAttempts = new HashMap<>();
+        List<RuleResult> results = new ArrayList<>();
+        HashSet<String> alreadyFlagged = new HashSet<>();
+
         for (LogEvent event : this.logEvents) {
             if (isLoginEndpoint(event) && isFailedLogin(event)) {
                 String ip = event.getSourceIp();
                 int newCount = ipFailedAttempts.getOrDefault(ip, 0) + 1;
                 ipFailedAttempts.put(ip, newCount);
 
-                if (newCount >= 5) {
-                    System.out.println("Suspicious activity detected from IP: " + ip + " with " + newCount + " failed attempts.");
-                    return true;
+                if (newCount >= 5 && alreadyFlagged.add(ip)) {
+                    results.add(new RuleResult("SuspiciousBruteLoginFromSameIP", ip, 
+                        newCount + " failed attempts from this IP."));
                 }
             }
         }
-        return false;
+        return results;
     }
 
-    public boolean suspiciousBruteLoginFromSameIPWithinTimeFrame(int threshold, int timeFrame) {
+    public List<RuleResult> suspiciousBruteLoginFromSameIPWithinTimeFrame(int threshold, int timeFrame) {
         HashMap<String, ArrayList<Instant>> ipFailedAttempts = new HashMap<>();
+        List<RuleResult> results = new ArrayList<>();
+        HashSet<String> alreadyFlagged = new HashSet<>();
 
         for (LogEvent event : this.logEvents) {
             boolean isFailedLogin = isLoginEndpoint(event) && isFailedLogin(event);
@@ -69,18 +76,20 @@ public class FailedLoginBurstRule {
 
             ipFailedAttempts.put(ip, attempts);
 
-            if (attempts.size() >= threshold) {
-                System.out.println("Suspicious activity detected from IP: " + ip + " with " + attempts.size() + " failed attempts within " + timeFrame + " minutes.");
-                return true;
+            if (attempts.size() >= threshold && alreadyFlagged.add(ip)) {
+                results.add(new RuleResult("SuspiciousBruteLoginFromSameIPWithinTimeFrame", ip,
+                    attempts.size() + " failed attempts from this IP within " + timeFrame + " minutes."));
             }
 
         }
 
-        return false;
+        return results;
     }
 
-    public boolean suspiciousUnusualEndpointAccessByIP(int distinctEndpointThreshold) {
+    public List<RuleResult> suspiciousUnusualEndpointAccessByIP(int distinctEndpointThreshold) {
         HashMap<String, HashSet<String>> ipEndpoints = new HashMap<>();
+        List<RuleResult> results = new ArrayList<>();
+        HashSet<String> alreadyFlagged = new HashSet<>();
 
         for (LogEvent event: this.logEvents) {
             String ip = event.getSourceIp();
@@ -89,27 +98,43 @@ public class FailedLoginBurstRule {
             endpointsForIp.add(endpoint);
             ipEndpoints.put(ip, endpointsForIp);
 
-            if (endpointsForIp.size() >= distinctEndpointThreshold) {
-                System.out.println("Suspicious activity detected from IP: " + ip + " accessing " + endpointsForIp.size() + " distinct endpoints.");
-                return true;
+            if (endpointsForIp.size() >= distinctEndpointThreshold && alreadyFlagged.add(ip)) {
+                results.add(new RuleResult("SuspiciousUnusualEndpointAccessByIP", ip,
+                    endpointsForIp.size() + " distinct endpoints accessed."));
             }
         }
 
-        return false;
+        return results;
     }
 
-    // Incomplete method for detecting port scan patterns based on distinct endpoints accessed from the same IP within a time frame
-    public boolean suspiciousPortScanPattern(int distinctEndpointThreshold, int timeFrameMinutes) {
+    public List<RuleResult> suspiciousPortScanPattern(int distinctEndpointThreshold, int timeFrameMinutes) {
         HashMap<String, ArrayList<LogEvent>> ipEvents = new HashMap<>();
+        List<RuleResult> results = new ArrayList<>();
+        HashSet<String> alreadyFlagged = new HashSet<>();
 
         for (LogEvent event: this.logEvents) {
             String ip = event.getSourceIp();
+            Instant eventTime = Instant.parse(event.getTimestamp());
 
             ArrayList<LogEvent> eventsForIp = ipEvents.getOrDefault(ip, new ArrayList<>());
             eventsForIp.add(event);
+
+            Instant windowStart = eventTime.minus(Duration.ofMinutes(timeFrameMinutes));
+            eventsForIp.removeIf(e -> Instant.parse(e.getTimestamp()).isBefore(windowStart));
+
             ipEvents.put(ip, eventsForIp);
+
+            HashSet<String> distinctEndpoints = new HashSet<>();
+            for (LogEvent e: eventsForIp) {
+                distinctEndpoints.add(e.getEndpoint());
+            }
+
+            if (distinctEndpoints.size() >= distinctEndpointThreshold && alreadyFlagged.add(ip)) {
+                results.add(new RuleResult("SuspiciousPortScanPattern", ip,
+                    distinctEndpoints.size() + " distinct endpoints accessed within " + timeFrameMinutes + " minutes."));
+            }
         }
-        return false;
+        return results;
     }
 
     private boolean isLoginEndpoint(LogEvent event) {
