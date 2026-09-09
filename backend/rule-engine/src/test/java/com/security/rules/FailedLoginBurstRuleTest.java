@@ -9,7 +9,11 @@ import org.junit.jupiter.api.Test;
 public class FailedLoginBurstRuleTest {
 
     private LogEvent makeEvent(String ip, String endpoint, int status, String timestamp) {
-        return new LogEvent(1, timestamp, ip, "user1", endpoint, status, "Mozilla/5.0", "test");
+        return makeEvent(ip, endpoint, status, timestamp, "user1");
+    }
+
+    private LogEvent makeEvent(String ip, String endpoint, int status, String timestamp, String userId) {
+        return new LogEvent(1, timestamp, ip, userId, endpoint, status, "Mozilla/5.0", "test");
     }
 
     @Test
@@ -200,4 +204,31 @@ public class FailedLoginBurstRuleTest {
 
         assertTrue(rule.suspiciousPortScanPattern(5, 10).isEmpty());
     }
+
+    @Test
+    void shouldDetectCredentialStuffingWhenManyDistinctUsernamesFromSameIP() {
+        ArrayList<LogEvent> events = new ArrayList<>();
+        events.add(makeEvent("198.51.100.1", "/api/login", 401, "2026-03-12T10:00:00Z", "alice"));
+        events.add(makeEvent("198.51.100.1", "/api/login", 401, "2026-03-12T10:01:00Z", "bob"));
+        events.add(makeEvent("198.51.100.1", "/api/login", 401, "2026-03-12T10:02:00Z", "carol"));
+        events.add(makeEvent("198.51.100.1", "/api/login", 401, "2026-03-12T10:03:00Z", "dave"));
+        events.add(makeEvent("198.51.100.1", "/api/login", 401, "2026-03-12T10:04:00Z", "eve"));
+
+        FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
+
+        assertFalse(rule.suspiciousCredentialStuffingByIP(5, 10).isEmpty());
+    }
+
+    @Test
+    void shouldNotDetectCredentialStuffingWhenSameUsernameRepeated() {
+        ArrayList<LogEvent> events = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            events.add(makeEvent("198.51.100.1", "/api/login", 401, "2026-03-12T10:0" + i + ":00Z", "alice"));
+        }
+
+        FailedLoginBurstRule rule = new FailedLoginBurstRule(events);
+
+        assertTrue(rule.suspiciousCredentialStuffingByIP(5, 10).isEmpty());
+    }
+
 }

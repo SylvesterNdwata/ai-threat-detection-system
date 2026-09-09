@@ -32,12 +32,7 @@ public class RuleEngineMain {
                 FailedLoginBurstRule rule = new FailedLoginBurstRule(logsFromClient);
 
                 System.out.println("Evaluating rules on fetched logs...");
-                List<RuleResult> allResults = new ArrayList<>();
-                allResults.addAll(rule.suspiciousBruteLogin());
-                allResults.addAll(rule.suspiciousBruteLoginFromSameIP());
-                allResults.addAll(rule.suspiciousBruteLoginFromSameIPWithinTimeFrame(5, 10));
-                allResults.addAll(rule.suspiciousUnusualEndpointAccessByIP(5));
-                allResults.addAll(rule.suspiciousPortScanPattern(5, 10));
+                List<RuleResult> allResults = rule.evaluateAllRules();
 
                 Instant now = Instant.now();
                 for (RuleResult result : allResults) {
