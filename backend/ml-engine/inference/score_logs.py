@@ -10,7 +10,8 @@ LOOKBACK_MINUTES = 20
 ALERT_COOLDOWN_MINUTES = 20
 
 def main():
-    model = joblib.load("models/isolation_forest.joblib")  # loaded ONCE, not per iteration
+    iso_model = joblib.load("models/isolation_forest.joblib")
+    rf_model = joblib.load("models/random_forest.joblib")
     last_alerted_at = {}
 
     print("ML inference engine started...")
@@ -28,7 +29,7 @@ def main():
             if features.empty:
                 print("No logs to score.")
             else:
-                predictions = model.predict(features)
+                predictions = iso_model.predict(features)
                 flagged_ips = features.index[predictions == -1]
 
                 now = datetime.now(timezone.utc)
@@ -37,11 +38,20 @@ def main():
                     if last_alert and (now - last_alert).total_seconds() < ALERT_COOLDOWN_MINUTES * 60:
                         print(f"SUPPRESSED (cooldown): {ip}")
                         continue
+                    
+                    ip_features = features.loc[[ip]]
+                    predicted_type = rf_model.predict(ip_features)[0]
+                    confidence = rf_model.predict_proba(ip_features)[0].max()
+                    
+                    if predicted_type == "normal":
+                        detail = f"Flagged as anomalous by Isolation Forest (no known attack pattern matched); Random Forest still called it 'normal' at {confidence:.0%} confidence)"
+                    else:
+                        detail = f"Flagged as anomalous by Isolation Forest; Random Forest suggests '{predicted_type}' ({confidence:.0%} confidence)"
 
                     alert = {
                         "rule_name": "MLAnomalyDetected",
                         "source_ip": ip,
-                        "detail": "Flagged as anomalous by Isolation Forest",
+                        "detail": detail,
                     }
                     post_response = requests.post("http://localhost:8001/alerts", json=alert, timeout=10)
                     post_response.raise_for_status()

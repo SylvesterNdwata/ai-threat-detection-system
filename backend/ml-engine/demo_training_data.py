@@ -5,7 +5,8 @@ import pandas as pd
 pd.set_option("display.max_columns", None)
 pd.set_option("display.width", 200)
 
-logs, anomalous_ips = generate_training_logs(num_normal_ips=300, num_anomalous_ips=10)
+logs, anomaly_labels = generate_training_logs(num_normal_ips=300, num_anomalous_ips=10)
+anomalous_ips = [ip for ip, label in anomaly_labels.items() if label != "normal"]
 print(f"Total log entries: {len(logs)}")
 print(f"Total distinct IPs generated: {len(set(l['source_ip'] for l in logs))}")
 print(f"Anomalous IPs injected: {anomalous_ips}")

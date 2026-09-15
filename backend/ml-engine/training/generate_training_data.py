@@ -59,7 +59,7 @@ def generate_anomalous_ip_logs(ip, next_id, base_time, kind):
 
 def generate_training_logs(num_normal_ips=300, num_anomalous_ips=10):
     logs = []
-    anomalous_ips = []
+    anomaly_labels = {}
     next_id = 1
     base_time = datetime.now(timezone.utc)
 
@@ -67,12 +67,14 @@ def generate_training_logs(num_normal_ips=300, num_anomalous_ips=10):
         ip = f"10.{random.randint(0,255)}.{random.randint(0,255)}.{random.randint(1,254)}"
         ip_logs, next_id = generate_normal_ip_logs(ip, next_id, base_time)
         logs.extend(ip_logs)
+        anomaly_labels[ip] = "normal"
 
     kinds = ["credential_stuffing", "port_scan", "high_rate"]
     for i in range(num_anomalous_ips):
         ip = f"203.0.113.{i+1}"
-        ip_logs, next_id = generate_anomalous_ip_logs(ip, next_id, base_time, random.choice(kinds))
+        kind = random.choice(kinds)
+        ip_logs, next_id = generate_anomalous_ip_logs(ip, next_id, base_time, kind)
         logs.extend(ip_logs)
-        anomalous_ips.append(ip)
+        anomaly_labels[ip] = kind
 
-    return logs, anomalous_ips
+    return logs, anomaly_labels
