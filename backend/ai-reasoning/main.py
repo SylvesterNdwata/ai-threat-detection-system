@@ -1,9 +1,17 @@
 import anthropic
 import requests
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from services.reasoning_service import explain_alert
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/explain/{alert_id}")
 async def explain(alert_id: int):

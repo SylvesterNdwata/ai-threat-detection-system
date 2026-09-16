@@ -1,0 +1,20 @@
+.alerts-table {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.alerts-table th,
+.alerts-table td {
+  overflow-wrap: break-word;
+  padding: 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.alerts-table th:nth-child(1), .alerts-table td:nth-child(1) { width: 6%; }   /* ID */
+.alerts-table th:nth-child(2), .alerts-table td:nth-child(2) { width: 18%; }  /* Rule */
+.alerts-table th:nth-child(3), .alerts-table td:nth-child(3) { width: 14%; }  /* Source IP */
+.alerts-table th:nth-child(4), .alerts-table td:nth-child(4) { width: 34%; }  /* Detail */
+.alerts-table th:nth-child(5), .alerts-table td:nth-child(5) { width: 18%; }  /* Detected At */
+.alerts-table th:nth-child(6), .alerts-table td:nth-child(6) { width: 10%; }  /* Explain */
