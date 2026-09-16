@@ -15,6 +15,10 @@ public class IngestionLogsClient {
 
     private final ObjectMapper mapper;
     private final HttpClient httpClient;
+    private static final String INGESTION_SERVICE_URL
+            = System.getenv("INGESTION_SERVICE_URL") != null
+            ? System.getenv("INGESTION_SERVICE_URL")
+            : "http://localhost:8001";
 
     public IngestionLogsClient() {
         this.mapper = new ObjectMapper();
@@ -26,7 +30,7 @@ public class IngestionLogsClient {
     public ArrayList<LogEvent> getLogs(int sinceMinutes) {
         HttpRequest httpRequest = HttpRequest.newBuilder()
                 .GET()
-                .uri(URI.create("http://localhost:8001/logs?since_minutes=" + sinceMinutes))
+                .uri(URI.create(INGESTION_SERVICE_URL + "/logs?since_minutes=" + sinceMinutes))
                 .build();
 
         try {
@@ -80,7 +84,7 @@ public class IngestionLogsClient {
         payload.put("detail", result.getDetail());
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8001/alerts"))
+                .uri(URI.create(INGESTION_SERVICE_URL + "/alerts"))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
                 .build();

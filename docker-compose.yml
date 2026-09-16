@@ -1,0 +1,40 @@
+services:
+  ingestion-service:
+    build: ./backend/ingestion-service
+    ports:
+      - "8001:8001"
+    volumes:
+      - ingestion-data:/app/data
+
+  ai-reasoning:
+    build: ./backend/ai-reasoning
+    ports:
+      - "8002:8002"
+    env_file:
+      - ./backend/ai-reasoning/.env
+    environment:
+      - INGESTION_SERVICE_URL=http://ingestion-service:8001
+    depends_on:
+      - ingestion-service
+
+  ml-engine:
+    build: ./backend/ml-engine
+    environment:
+      - INGESTION_SERVICE_URL=http://ingestion-service:8001
+    depends_on:
+      - ingestion-service
+
+  rule-engine:
+    build: ./backend/rule-engine
+    environment:
+      - INGESTION_SERVICE_URL=http://ingestion-service:8001
+    depends_on:
+      - ingestion-service
+  
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:80"
+
+volumes:
+    ingestion-data:

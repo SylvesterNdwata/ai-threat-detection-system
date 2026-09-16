@@ -1,6 +1,7 @@
 import time
 import joblib
 import requests
+import os
 from datetime import datetime, timezone
 
 from utils.feature_function import compute_features
@@ -8,6 +9,7 @@ from utils.feature_function import compute_features
 POLL_INTERVAL_SECONDS = 5
 LOOKBACK_MINUTES = 20
 ALERT_COOLDOWN_MINUTES = 20
+INGESTION_SERVICE_URL = os.environ.get("INGESTION_SERVICE_URL", "http://localhost:8001")
 
 def main():
     iso_model = joblib.load("models/isolation_forest.joblib")
@@ -18,7 +20,7 @@ def main():
     while True:
         try:
             response = requests.get(
-                "http://localhost:8001/logs",
+                f"{INGESTION_SERVICE_URL}/logs",
                 params={"since_minutes": LOOKBACK_MINUTES},
                 timeout=10,
             )
@@ -53,7 +55,7 @@ def main():
                         "source_ip": ip,
                         "detail": detail,
                     }
-                    post_response = requests.post("http://localhost:8001/alerts", json=alert, timeout=10)
+                    post_response = requests.post(f"{INGESTION_SERVICE_URL}/alerts", json=alert, timeout=10)
                     post_response.raise_for_status()
                     print(f"ALERT posted for {ip}")
                     last_alerted_at[ip] = now
